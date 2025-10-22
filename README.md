@@ -177,8 +177,23 @@ All successful responses follow standard format:
 4. Write comprehensive tests
 5. Deploy to staging for validation
 
+## GitHub Actions Deployment
+
+This repository includes automatic deployment via GitHub Actions:
+
+- Push to `main` branch triggers automatic deployment to production
+- Manual deployment available via GitHub Actions tab
+- Requires secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+
+## Related Repositories
+
+- [blog-public-worker](../blog-public-worker) - Public API Worker
+- [blog-migration](../blog-migration) - Database schema and migrations
+- [blog-frontend](../blog-frontend) - Next.js frontend
+- [blog-backend](../blog-backend) - Backend services
+
 ## Resources
 
-- [Implementation Plan](../IMPLEMENTATION_PLAN.md) - Complete specification
-- [Setup Guide](../SETUP_GUIDE.md) - Setup instructions
 - [CloudFlare Workers Docs](https://developers.cloudflare.com/workers/)
+- [CloudFlare D1 Docs](https://developers.cloudflare.com/d1/)
+- [CloudFlare R2 Docs](https://developers.cloudflare.com/r2/)
