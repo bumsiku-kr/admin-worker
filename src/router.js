@@ -124,9 +124,10 @@ function getQueryParams(url) {
  * @param {Object} env - Environment bindings
  * @param {Object} ctx - Execution context
  * @param {Object} user - Authenticated user (if applicable)
+ * @param {Logger} logger - Logger instance with request context
  * @returns {Promise<Response>} Response object
  */
-export async function router(request, env, ctx, user = null) {
+export async function router(request, env, ctx, user = null, logger = null) {
   try {
     const url = new URL(request.url);
     const { pathname } = url;
@@ -136,15 +137,42 @@ export async function router(request, env, ctx, user = null) {
     const match = findRoute(method, pathname);
 
     if (!match) {
+      if (logger) {
+        logger.warn('Route not found', { pathname, method });
+      }
       return errorResponse('Not Found', 404);
     }
 
+    // Create child logger with route context
+    const routeLogger = logger
+      ? logger.child({ handler: match.handler.name })
+      : null;
+
+    if (routeLogger) {
+      routeLogger.debug('Route matched', { params: match.params });
+    }
+
     // Call handler with separate arguments
-    // Signature: handler(request, env, ctx, params, user)
-    return await match.handler(request, env, ctx, match.params, user);
+    // Signature: handler(request, env, ctx, params, user, logger)
+    const handlerStartTime = Date.now();
+    const response = await match.handler(request, env, ctx, match.params, user, routeLogger);
+    const handlerDuration = Date.now() - handlerStartTime;
+
+    if (routeLogger) {
+      routeLogger.debug('Handler completed', {
+        duration: handlerDuration,
+        status: response.status
+      });
+    }
+
+    return response;
 
   } catch (error) {
-    console.error('Router error:', error);
+    if (logger) {
+      logger.error('Router error', error);
+    } else {
+      console.error('Router error:', error);
+    }
 
     // Convert to API error
     const apiError = toAPIError(error);

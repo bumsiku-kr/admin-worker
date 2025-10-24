@@ -25,9 +25,10 @@ function generateSlug(title) {
  *
  * @param {Request} request - Create post request
  * @param {Object} env - Environment variables (DB binding)
+ * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Created post response
  */
-export async function handleCreatePost(request, env, ctx, params, user) {
+export async function handleCreatePost(request, env, ctx, params, user, logger) {
   try {
     const body = await request.json();
     const validation = validatePostCreate(body);
@@ -90,13 +91,25 @@ export async function handleCreatePost(request, env, ctx, params, user) {
     // Fetch created post with tags
     const createdPost = await getPostById(env, postId);
 
+    if (logger) {
+      logger.info('Post created', { postId, slug });
+    }
+
     return successResponse(createdPost, 200);
 
   } catch (err) {
     if (err instanceof ValidationError) {
+      if (logger) {
+        logger.warn('Post creation validation failed', { error: err.message });
+      }
       return errorResponse(err.message, err.status);
     }
-    console.error('Create post error:', err);
+
+    if (logger) {
+      logger.error('Create post error', err);
+    } else {
+      console.error('Create post error:', err);
+    }
     return errorResponse('Internal server error', 500);
   }
 }
@@ -108,9 +121,10 @@ export async function handleCreatePost(request, env, ctx, params, user) {
  * @param {Request} request - Update post request
  * @param {Object} env - Environment variables
  * @param {Object} params - URL parameters {postId}
+ * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Updated post response
  */
-export async function handleUpdatePost(request, env, ctx, params, user) {
+export async function handleUpdatePost(request, env, ctx, params, user, logger) {
   try {
     const postId = parseInt(params.postId);
     if (isNaN(postId)) {
@@ -183,13 +197,25 @@ export async function handleUpdatePost(request, env, ctx, params, user) {
     // Fetch updated post
     const updatedPost = await getPostById(env, postId);
 
+    if (logger) {
+      logger.info('Post updated', { postId });
+    }
+
     return successResponse(updatedPost, 200);
 
   } catch (err) {
     if (err instanceof ValidationError || err instanceof NotFoundError) {
+      if (logger) {
+        logger.warn('Post update failed', { postId: params.postId, error: err.message });
+      }
       return errorResponse(err.message, err.status);
     }
-    console.error('Update post error:', err);
+
+    if (logger) {
+      logger.error('Update post error', err);
+    } else {
+      console.error('Update post error:', err);
+    }
     return errorResponse('Internal server error', 500);
   }
 }
@@ -201,9 +227,10 @@ export async function handleUpdatePost(request, env, ctx, params, user) {
  * @param {Request} request - Delete post request
  * @param {Object} env - Environment variables
  * @param {Object} params - URL parameters {postId}
+ * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Deletion confirmation response
  */
-export async function handleDeletePost(request, env, ctx, params, user) {
+export async function handleDeletePost(request, env, ctx, params, user, logger) {
   try {
     const postId = parseInt(params.postId);
     if (isNaN(postId)) {
@@ -222,6 +249,10 @@ export async function handleDeletePost(request, env, ctx, params, user) {
     // Delete post (cascading deletes will handle post_tags and comments via triggers)
     await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId).run();
 
+    if (logger) {
+      logger.info('Post deleted', { postId });
+    }
+
     return successResponse({
       deleted: true,
       id: postId
@@ -229,9 +260,17 @@ export async function handleDeletePost(request, env, ctx, params, user) {
 
   } catch (err) {
     if (err instanceof ValidationError || err instanceof NotFoundError) {
+      if (logger) {
+        logger.warn('Post deletion failed', { postId: params.postId, error: err.message });
+      }
       return errorResponse(err.message, err.status);
     }
-    console.error('Delete post error:', err);
+
+    if (logger) {
+      logger.error('Delete post error', err);
+    } else {
+      console.error('Delete post error:', err);
+    }
     return errorResponse('Internal server error', 500);
   }
 }
