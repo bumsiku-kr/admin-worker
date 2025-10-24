@@ -170,13 +170,18 @@ export function validateCommentRequest(data) {
 /**
  * Validate login request
  * @param {Object} data - Login data to validate
- * @throws {ValidationError} If validation fails
+ * @returns {Object} Validation result with valid flag and optional error
  */
 export function validateLoginRequest(data) {
-  validateRequired(data, ["username", "password"]);
+  try {
+    validateRequired(data, ["username", "password"]);
+    validateStringLength(data.username, "username", 2, 50);
+    validateStringLength(data.password, "password", 1, 100);
 
-  validateStringLength(data.username, "username", 2, 50);
-  validateStringLength(data.password, "password", 1, 100);
+    return { valid: true };
+  } catch (err) {
+    return { valid: false, error: err.message };
+  }
 }
 
 /**
