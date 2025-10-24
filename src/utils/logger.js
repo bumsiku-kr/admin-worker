@@ -8,10 +8,10 @@
  * Log levels
  */
 export const LogLevel = {
-  ERROR: 'ERROR',
-  WARN: 'WARN',
-  INFO: 'INFO',
-  DEBUG: 'DEBUG'
+  ERROR: "ERROR",
+  WARN: "WARN",
+  INFO: "INFO",
+  DEBUG: "DEBUG",
 };
 
 /**
@@ -35,7 +35,7 @@ export class Logger {
       timestamp: new Date().toISOString(),
       message,
       ...this.context,
-      ...meta
+      ...meta,
     };
   }
 
@@ -45,13 +45,14 @@ export class Logger {
    * @param {Error|Object} error - Error object or metadata
    */
   error(message, error = {}) {
-    const meta = error instanceof Error
-      ? {
-          error: error.message,
-          stack: error.stack,
-          name: error.name
-        }
-      : error;
+    const meta =
+      error instanceof Error
+        ? {
+            error: error.message,
+            stack: error.stack,
+            name: error.name,
+          }
+        : error;
 
     const logEntry = this.createLogEntry(LogLevel.ERROR, message, meta);
     console.error(JSON.stringify(logEntry));
@@ -84,7 +85,7 @@ export class Logger {
    */
   debug(message, meta = {}) {
     // Only log debug in development
-    if (this.context.environment !== 'production') {
+    if (this.context.environment !== "production") {
       const logEntry = this.createLogEntry(LogLevel.DEBUG, message, meta);
       console.log(JSON.stringify(logEntry));
     }
@@ -98,7 +99,7 @@ export class Logger {
   child(additionalContext) {
     return new Logger({
       ...this.context,
-      ...additionalContext
+      ...additionalContext,
     });
   }
 }
@@ -117,7 +118,7 @@ export function createRequestLogger(request, env, correlationId) {
     correlationId,
     method: request.method,
     path: url.pathname,
-    environment: env.ENVIRONMENT || 'development'
+    environment: env.ENVIRONMENT || "development",
   });
 }
 
@@ -138,10 +139,10 @@ export function generateCorrelationId() {
 export function logRequestCompletion(logger, response, startTime) {
   const duration = Date.now() - startTime;
 
-  logger.info('Request completed', {
+  logger.info("Request completed", {
     status: response.status,
     duration,
-    statusText: response.statusText
+    statusText: response.statusText,
   });
 }
 
@@ -167,7 +168,7 @@ export async function logDatabaseOperation(logger, operation, fn) {
 
     logger.error(`Database operation failed: ${operation}`, {
       error,
-      duration
+      duration,
     });
 
     throw error;

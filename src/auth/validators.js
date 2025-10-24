@@ -11,7 +11,7 @@
  */
 export async function generateJWT(payload, secret) {
   // Encode header and payload
-  const header = { alg: 'HS256', typ: 'JWT' };
+  const header = { alg: "HS256", typ: "JWT" };
   const headerB64 = base64UrlEncode(JSON.stringify(header));
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
 
@@ -33,9 +33,9 @@ export async function generateJWT(payload, secret) {
  */
 export async function validateJWT(token, secret) {
   // Split token into parts
-  const parts = token.split('.');
+  const parts = token.split(".");
   if (parts.length !== 3) {
-    throw new Error('Invalid token format');
+    throw new Error("Invalid token format");
   }
 
   const [headerB64, payloadB64, signatureB64] = parts;
@@ -46,7 +46,7 @@ export async function validateJWT(token, secret) {
   const valid = await verifySignature(data, signature, secret);
 
   if (!valid) {
-    throw new Error('Invalid signature');
+    throw new Error("Invalid signature");
   }
 
   // Decode and validate payload
@@ -54,7 +54,7 @@ export async function validateJWT(token, secret) {
 
   // Check expiration
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new Error('Token expired');
+    throw new Error("Token expired");
   }
 
   return payload;
@@ -69,18 +69,14 @@ export async function validateJWT(token, secret) {
 async function signData(data, secret) {
   const encoder = new TextEncoder();
   const secretKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['sign']
+    ["sign"],
   );
 
-  return await crypto.subtle.sign(
-    'HMAC',
-    secretKey,
-    encoder.encode(data)
-  );
+  return await crypto.subtle.sign("HMAC", secretKey, encoder.encode(data));
 }
 
 /**
@@ -93,18 +89,18 @@ async function signData(data, secret) {
 async function verifySignature(data, signature, secret) {
   const encoder = new TextEncoder();
   const secretKey = await crypto.subtle.importKey(
-    'raw',
+    "raw",
     encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
+    { name: "HMAC", hash: "SHA-256" },
     false,
-    ['verify']
+    ["verify"],
   );
 
   return await crypto.subtle.verify(
-    'HMAC',
+    "HMAC",
     secretKey,
     signature,
-    encoder.encode(data)
+    encoder.encode(data),
   );
 }
 
@@ -116,22 +112,19 @@ async function verifySignature(data, signature, secret) {
 function base64UrlEncode(input) {
   let str;
 
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     str = btoa(input);
   } else {
     // ArrayBuffer
     const bytes = new Uint8Array(input);
-    let binary = '';
+    let binary = "";
     for (let i = 0; i < bytes.length; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
     str = btoa(binary);
   }
 
-  return str
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  return str.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
 /**
@@ -140,12 +133,12 @@ function base64UrlEncode(input) {
  * @returns {Uint8Array} Decoded data
  */
 function base64UrlDecode(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  str = str.replace(/-/g, "+").replace(/_/g, "/");
   const pad = str.length % 4;
   if (pad) {
-    str += '='.repeat(4 - pad);
+    str += "=".repeat(4 - pad);
   }
-  return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+  return Uint8Array.from(atob(str), (c) => c.charCodeAt(0));
 }
 
 /**
@@ -154,10 +147,10 @@ function base64UrlDecode(str) {
  * @returns {string} Decoded string
  */
 function base64UrlDecodeString(str) {
-  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  str = str.replace(/-/g, "+").replace(/_/g, "/");
   const pad = str.length % 4;
   if (pad) {
-    str += '='.repeat(4 - pad);
+    str += "=".repeat(4 - pad);
   }
   return atob(str);
 }
@@ -173,6 +166,6 @@ export function createPayload(userId, expiresInSeconds = 7200) {
   return {
     userId,
     iat: now,
-    exp: now + expiresInSeconds
+    exp: now + expiresInSeconds,
   };
 }

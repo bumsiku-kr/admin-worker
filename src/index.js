@@ -3,10 +3,14 @@
  * Handles authenticated admin API requests
  */
 
-import { router } from './router.js';
-import { errorResponse, handleCORS, addCORSHeaders } from './utils/response.js';
-import { toAPIError } from './utils/errors.js';
-import { createRequestLogger, generateCorrelationId, logRequestCompletion } from './utils/logger.js';
+import { router } from "./router.js";
+import { errorResponse, handleCORS, addCORSHeaders } from "./utils/response.js";
+import { toAPIError } from "./utils/errors.js";
+import {
+  createRequestLogger,
+  generateCorrelationId,
+  logRequestCompletion,
+} from "./utils/logger.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -18,16 +22,16 @@ export default {
     const logger = createRequestLogger(request, env, correlationId);
 
     try {
-      const allowedOrigins = env.ALLOWED_ORIGINS || '*';
+      const allowedOrigins = env.ALLOWED_ORIGINS || "*";
 
       // Handle CORS preflight requests
-      if (request.method === 'OPTIONS') {
+      if (request.method === "OPTIONS") {
         const response = handleCORS(allowedOrigins);
         logRequestCompletion(logger, response, startTime);
         return response;
       }
 
-      logger.debug('Processing request');
+      logger.debug("Processing request");
 
       // Route request through router with logger
       const response = await router(request, env, ctx, null, logger);
@@ -37,10 +41,9 @@ export default {
 
       // Add CORS headers to response
       return addCORSHeaders(response, allowedOrigins);
-
     } catch (error) {
       // Log error with full context
-      logger.error('Admin Worker Error', error);
+      logger.error("Admin Worker Error", error);
 
       // Convert to API error and return error response
       const apiError = toAPIError(error);
@@ -50,7 +53,7 @@ export default {
       logRequestCompletion(logger, errorResp, startTime);
 
       // Add CORS headers to error response
-      return addCORSHeaders(errorResp, env.ALLOWED_ORIGINS || '*');
+      return addCORSHeaders(errorResp, env.ALLOWED_ORIGINS || "*");
     }
-  }
+  },
 };

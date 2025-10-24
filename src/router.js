@@ -3,12 +3,16 @@
  * URL routing logic for admin API endpoints
  */
 
-import { errorResponse } from './utils/response.js';
-import { toAPIError } from './utils/errors.js';
-import { handleLogin, handleSessionValidation } from './handlers/auth.js';
-import { handleCreatePost, handleUpdatePost, handleDeletePost } from './handlers/posts.js';
-import { handleImageUpload } from './handlers/images.js';
-import { handleDeleteComment } from './handlers/comments.js';
+import { errorResponse } from "./utils/response.js";
+import { toAPIError } from "./utils/errors.js";
+import { handleLogin, handleSessionValidation } from "./handlers/auth.js";
+import {
+  handleCreatePost,
+  handleUpdatePost,
+  handleDeletePost,
+} from "./handlers/posts.js";
+import { handleImageUpload } from "./handlers/images.js";
+import { handleDeleteComment } from "./handlers/comments.js";
 
 /**
  * Route configuration
@@ -17,15 +21,18 @@ import { handleDeleteComment } from './handlers/comments.js';
  */
 const routes = [
   // Authentication endpoints (login doesn't require auth, session does)
-  { pattern: 'POST /login', handler: handleLogin },
-  { pattern: 'GET /session', handler: handleSessionValidation },
+  { pattern: "POST /login", handler: handleLogin },
+  { pattern: "GET /session", handler: handleSessionValidation },
 
   // Admin endpoints (auth required via middleware)
-  { pattern: 'POST /admin/posts', handler: handleCreatePost },
-  { pattern: 'PUT /admin/posts/:postId', handler: handleUpdatePost },
-  { pattern: 'DELETE /admin/posts/:postId', handler: handleDeletePost },
-  { pattern: 'POST /admin/images', handler: handleImageUpload },
-  { pattern: 'DELETE /admin/comments/:commentId', handler: handleDeleteComment },
+  { pattern: "POST /admin/posts", handler: handleCreatePost },
+  { pattern: "PUT /admin/posts/:postId", handler: handleUpdatePost },
+  { pattern: "DELETE /admin/posts/:postId", handler: handleDeletePost },
+  { pattern: "POST /admin/images", handler: handleImageUpload },
+  {
+    pattern: "DELETE /admin/comments/:commentId",
+    handler: handleDeleteComment,
+  },
 ];
 
 /**
@@ -35,8 +42,8 @@ const routes = [
  * @returns {Object|null} Match result with params, or null if no match
  */
 function matchPattern(pattern, path) {
-  const patternParts = pattern.split('/').filter(Boolean);
-  const pathParts = path.split('/').filter(Boolean);
+  const patternParts = pattern.split("/").filter(Boolean);
+  const pathParts = path.split("/").filter(Boolean);
 
   // Must have same number of parts
   if (patternParts.length !== pathParts.length) {
@@ -50,7 +57,7 @@ function matchPattern(pattern, path) {
     const pathPart = pathParts[i];
 
     // Parameter (starts with :)
-    if (patternPart.startsWith(':')) {
+    if (patternPart.startsWith(":")) {
       const paramName = patternPart.substring(1);
       params[paramName] = decodeURIComponent(pathPart);
     }
@@ -71,7 +78,7 @@ function matchPattern(pattern, path) {
  */
 function findRoute(method, pathname) {
   for (const route of routes) {
-    const [routeMethod, routePattern] = route.pattern.split(' ', 2);
+    const [routeMethod, routePattern] = route.pattern.split(" ", 2);
 
     // Method must match
     if (routeMethod !== method) {
@@ -83,7 +90,7 @@ function findRoute(method, pathname) {
     if (match) {
       return {
         handler: route.handler,
-        params: match.params
+        params: match.params,
       };
     }
   }
@@ -101,7 +108,7 @@ async function parseJsonBody(request) {
     const text = await request.text();
     return text ? JSON.parse(text) : {};
   } catch (error) {
-    throw new Error('Invalid JSON in request body');
+    throw new Error("Invalid JSON in request body");
   }
 }
 
@@ -138,9 +145,9 @@ export async function router(request, env, ctx, user = null, logger = null) {
 
     if (!match) {
       if (logger) {
-        logger.warn('Route not found', { pathname, method });
+        logger.warn("Route not found", { pathname, method });
       }
-      return errorResponse('Not Found', 404);
+      return errorResponse("Not Found", 404);
     }
 
     // Create child logger with route context
@@ -149,29 +156,35 @@ export async function router(request, env, ctx, user = null, logger = null) {
       : null;
 
     if (routeLogger) {
-      routeLogger.debug('Route matched', { params: match.params });
+      routeLogger.debug("Route matched", { params: match.params });
     }
 
     // Call handler with separate arguments
     // Signature: handler(request, env, ctx, params, user, logger)
     const handlerStartTime = Date.now();
-    const response = await match.handler(request, env, ctx, match.params, user, routeLogger);
+    const response = await match.handler(
+      request,
+      env,
+      ctx,
+      match.params,
+      user,
+      routeLogger,
+    );
     const handlerDuration = Date.now() - handlerStartTime;
 
     if (routeLogger) {
-      routeLogger.debug('Handler completed', {
+      routeLogger.debug("Handler completed", {
         duration: handlerDuration,
-        status: response.status
+        status: response.status,
       });
     }
 
     return response;
-
   } catch (error) {
     if (logger) {
-      logger.error('Router error', error);
+      logger.error("Router error", error);
     } else {
-      console.error('Router error:', error);
+      console.error("Router error:", error);
     }
 
     // Convert to API error
@@ -194,5 +207,5 @@ export function registerRoute(pattern, handler) {
  * @returns {Array} Array of routes
  */
 export function getRoutes() {
-  return routes.map(r => r.pattern);
+  return routes.map((r) => r.pattern);
 }

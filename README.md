@@ -5,6 +5,7 @@ JWT-authenticated CloudFlare Worker for administrative API operations.
 ## Overview
 
 This worker handles all authenticated operations for the bumsiku.kr blog:
+
 - User authentication (login, session validation)
 - Post management (create, update, delete)
 - Image uploads to R2 storage
@@ -23,10 +24,12 @@ Token is obtained via `/login` endpoint and expires after 2 hours (configurable 
 ## API Endpoints
 
 ### Public Endpoints (No Auth)
+
 - `POST /login` - Administrator login, returns JWT token
 - `GET /session` - Validate current session/token
 
 ### Protected Endpoints (JWT Required)
+
 - `POST /admin/posts` - Create new blog post
 - `PUT /admin/posts/{postId}` - Update existing post
 - `DELETE /admin/posts/{postId}` - Delete post
@@ -36,6 +39,7 @@ Token is obtained via `/login` endpoint and expires after 2 hours (configurable 
 ## Configuration
 
 ### Environment Variables (wrangler.toml)
+
 ```toml
 [vars]
 ENVIRONMENT = "production"
@@ -44,11 +48,13 @@ JWT_EXPIRY = "7200"  # 2 hours
 ```
 
 ### Secrets (set via wrangler secret put)
+
 - `JWT_SECRET` - Secret key for JWT signing (min 32 chars)
 - `ADMIN_USERNAME` - Administrator username
 - `ADMIN_PASSWORD` - Administrator password (bcrypt hashed)
 
 ### CloudFlare Bindings
+
 - `DB` - D1 database (blog-db)
 - `STORAGE` - R2 bucket (blog-images)
 - `CACHE` - KV namespace (optional)
@@ -118,11 +124,13 @@ admin-worker/
 ## Security Considerations
 
 1. **JWT Secret**: Use strong random string (min 32 characters)
+
    ```bash
    openssl rand -base64 32
    ```
 
 2. **Admin Password**: Always use bcrypt hashed passwords
+
    ```bash
    node -e "console.log(require('bcrypt').hashSync('password', 10))"
    ```

@@ -3,9 +3,9 @@
  * JWT-based authentication for admin endpoints
  */
 
-import { validateJWT } from './validators.js';
-import { errorResponse } from '../utils/response.js';
-import { UnauthorizedError } from '../utils/errors.js';
+import { validateJWT } from "./validators.js";
+import { errorResponse } from "../utils/response.js";
+import { UnauthorizedError } from "../utils/errors.js";
 
 /**
  * Authenticate request using JWT Bearer token
@@ -20,11 +20,13 @@ export async function authenticate(request, env) {
   const pathname = url.pathname;
 
   // Exempt login and session endpoints from authentication
-  const publicEndpoints = ['/login', '/session'];
-  const isPublicEndpoint = publicEndpoints.some(endpoint => pathname === endpoint);
+  const publicEndpoints = ["/login", "/session"];
+  const isPublicEndpoint = publicEndpoints.some(
+    (endpoint) => pathname === endpoint,
+  );
 
   // Session endpoint requires auth to validate token
-  if (pathname === '/session') {
+  if (pathname === "/session") {
     // Session validation DOES require token
     return await verifyToken(request, env);
   }
@@ -45,11 +47,14 @@ export async function authenticate(request, env) {
  * @returns {Promise<Object|Response>} Auth result or error response
  */
 async function verifyToken(request, env) {
-  const authHeader = request.headers.get('Authorization');
+  const authHeader = request.headers.get("Authorization");
 
   // Check for Authorization header
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return errorResponse('Unauthorized - Missing or invalid authorization header', 401);
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return errorResponse(
+      "Unauthorized - Missing or invalid authorization header",
+      401,
+    );
   }
 
   // Extract token
@@ -102,28 +107,28 @@ export async function validateCredentials(request, env) {
  * @returns {Object|Response} Auth result or error response
  */
 export function basicAuth(request, env) {
-  const authHeader = request.headers.get('Authorization');
+  const authHeader = request.headers.get("Authorization");
 
-  if (!authHeader || !authHeader.startsWith('Basic ')) {
-    return new Response('Unauthorized', {
+  if (!authHeader || !authHeader.startsWith("Basic ")) {
+    return new Response("Unauthorized", {
       status: 401,
       headers: {
-        'WWW-Authenticate': 'Basic realm="Admin Area"',
-        'Content-Type': 'text/plain'
-      }
+        "WWW-Authenticate": 'Basic realm="Admin Area"',
+        "Content-Type": "text/plain",
+      },
     });
   }
 
   const credentials = atob(authHeader.substring(6));
-  const [username, password] = credentials.split(':');
+  const [username, password] = credentials.split(":");
 
   // Constant-time comparison to prevent timing attacks
   if (username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
     return { authorized: true, user: { username } };
   }
 
-  return new Response('Unauthorized', {
+  return new Response("Unauthorized", {
     status: 401,
-    headers: { 'Content-Type': 'text/plain' }
+    headers: { "Content-Type": "text/plain" },
   });
 }

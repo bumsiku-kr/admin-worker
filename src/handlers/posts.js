@@ -3,9 +3,9 @@
  * Admin CRUD operations for blog posts
  */
 
-import { successResponse, errorResponse } from '../utils/response.js';
-import { validatePostCreate } from '../utils/validation.js';
-import { ValidationError, NotFoundError } from '../utils/errors.js';
+import { successResponse, errorResponse } from "../utils/response.js";
+import { validatePostCreate } from "../utils/validation.js";
+import { ValidationError, NotFoundError } from "../utils/errors.js";
 
 /**
  * Generate slug from title
@@ -15,8 +15,8 @@ import { ValidationError, NotFoundError } from '../utils/errors.js';
 function generateSlug(title) {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
@@ -28,7 +28,14 @@ function generateSlug(title) {
  * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Created post response
  */
-export async function handleCreatePost(request, env, ctx, params, user, logger) {
+export async function handleCreatePost(
+  request,
+  env,
+  ctx,
+  params,
+  user,
+  logger,
+) {
   try {
     const body = await request.json();
     const validation = validatePostCreate(body);
@@ -47,19 +54,23 @@ export async function handleCreatePost(request, env, ctx, params, user, logger) 
 
     // Check slug uniqueness
     const existingPost = await env.DB.prepare(
-      'SELECT id FROM posts WHERE slug = ?'
-    ).bind(slug).first();
+      "SELECT id FROM posts WHERE slug = ?",
+    )
+      .bind(slug)
+      .first();
 
     if (existingPost) {
-      throw new ValidationError('Slug already exists');
+      throw new ValidationError("Slug already exists");
     }
 
     // Insert post
     const now = new Date().toISOString();
     const insertResult = await env.DB.prepare(
       `INSERT INTO posts (slug, title, content, summary, state, created_at, updated_at, views)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`
-    ).bind(slug, title, content, summary, state, now, now).run();
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+    )
+      .bind(slug, title, content, summary, state, now, now)
+      .run();
 
     const postId = insertResult.meta.last_row_id;
 
@@ -67,15 +78,17 @@ export async function handleCreatePost(request, env, ctx, params, user, logger) 
     if (tags.length > 0) {
       for (const tagName of tags) {
         // Get or create tag
-        let tag = await env.DB.prepare(
-          'SELECT id FROM tags WHERE name = ?'
-        ).bind(tagName).first();
+        let tag = await env.DB.prepare("SELECT id FROM tags WHERE name = ?")
+          .bind(tagName)
+          .first();
 
         let tagId;
         if (!tag) {
           const tagResult = await env.DB.prepare(
-            'INSERT INTO tags (name, created_at, post_count) VALUES (?, ?, 0)'
-          ).bind(tagName, now).run();
+            "INSERT INTO tags (name, created_at, post_count) VALUES (?, ?, 0)",
+          )
+            .bind(tagName, now)
+            .run();
           tagId = tagResult.meta.last_row_id;
         } else {
           tagId = tag.id;
@@ -83,8 +96,10 @@ export async function handleCreatePost(request, env, ctx, params, user, logger) 
 
         // Create post-tag relationship
         await env.DB.prepare(
-          'INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)'
-        ).bind(postId, tagId).run();
+          "INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)",
+        )
+          .bind(postId, tagId)
+          .run();
       }
     }
 
@@ -92,25 +107,24 @@ export async function handleCreatePost(request, env, ctx, params, user, logger) 
     const createdPost = await getPostById(env, postId);
 
     if (logger) {
-      logger.info('Post created', { postId, slug });
+      logger.info("Post created", { postId, slug });
     }
 
     return successResponse(createdPost, 200);
-
   } catch (err) {
     if (err instanceof ValidationError) {
       if (logger) {
-        logger.warn('Post creation validation failed', { error: err.message });
+        logger.warn("Post creation validation failed", { error: err.message });
       }
       return errorResponse(err.message, err.status);
     }
 
     if (logger) {
-      logger.error('Create post error', err);
+      logger.error("Create post error", err);
     } else {
-      console.error('Create post error:', err);
+      console.error("Create post error:", err);
     }
-    return errorResponse('Internal server error', 500);
+    return errorResponse("Internal server error", 500);
   }
 }
 
@@ -124,11 +138,18 @@ export async function handleCreatePost(request, env, ctx, params, user, logger) 
  * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Updated post response
  */
-export async function handleUpdatePost(request, env, ctx, params, user, logger) {
+export async function handleUpdatePost(
+  request,
+  env,
+  ctx,
+  params,
+  user,
+  logger,
+) {
   try {
     const postId = parseInt(params.postId);
     if (isNaN(postId)) {
-      throw new ValidationError('Invalid post ID');
+      throw new ValidationError("Invalid post ID");
     }
 
     const body = await request.json();
@@ -140,11 +161,13 @@ export async function handleUpdatePost(request, env, ctx, params, user, logger) 
 
     // Check post exists
     const existingPost = await env.DB.prepare(
-      'SELECT id FROM posts WHERE id = ?'
-    ).bind(postId).first();
+      "SELECT id FROM posts WHERE id = ?",
+    )
+      .bind(postId)
+      .first();
 
     if (!existingPost) {
-      throw new NotFoundError('Post not found');
+      throw new NotFoundError("Post not found");
     }
 
     const { title, content, summary, tags = [], state, slug } = body;
@@ -152,11 +175,13 @@ export async function handleUpdatePost(request, env, ctx, params, user, logger) 
     // Check slug uniqueness (if changed)
     if (slug) {
       const slugConflict = await env.DB.prepare(
-        'SELECT id FROM posts WHERE slug = ? AND id != ?'
-      ).bind(slug, postId).first();
+        "SELECT id FROM posts WHERE slug = ? AND id != ?",
+      )
+        .bind(slug, postId)
+        .first();
 
       if (slugConflict) {
-        throw new ValidationError('Slug already exists');
+        throw new ValidationError("Slug already exists");
       }
     }
 
@@ -165,32 +190,40 @@ export async function handleUpdatePost(request, env, ctx, params, user, logger) 
     await env.DB.prepare(
       `UPDATE posts
        SET title = ?, content = ?, summary = ?, state = ?, slug = COALESCE(?, slug), updated_at = ?
-       WHERE id = ?`
-    ).bind(title, content, summary, state, slug, now, postId).run();
+       WHERE id = ?`,
+    )
+      .bind(title, content, summary, state, slug, now, postId)
+      .run();
 
     // Update tags - delete existing and insert new
-    await env.DB.prepare('DELETE FROM post_tags WHERE post_id = ?').bind(postId).run();
+    await env.DB.prepare("DELETE FROM post_tags WHERE post_id = ?")
+      .bind(postId)
+      .run();
 
     if (tags.length > 0) {
       const nowTs = new Date().toISOString();
       for (const tagName of tags) {
-        let tag = await env.DB.prepare(
-          'SELECT id FROM tags WHERE name = ?'
-        ).bind(tagName).first();
+        let tag = await env.DB.prepare("SELECT id FROM tags WHERE name = ?")
+          .bind(tagName)
+          .first();
 
         let tagId;
         if (!tag) {
           const tagResult = await env.DB.prepare(
-            'INSERT INTO tags (name, created_at, post_count) VALUES (?, ?, 0)'
-          ).bind(tagName, nowTs).run();
+            "INSERT INTO tags (name, created_at, post_count) VALUES (?, ?, 0)",
+          )
+            .bind(tagName, nowTs)
+            .run();
           tagId = tagResult.meta.last_row_id;
         } else {
           tagId = tag.id;
         }
 
         await env.DB.prepare(
-          'INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)'
-        ).bind(postId, tagId).run();
+          "INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)",
+        )
+          .bind(postId, tagId)
+          .run();
       }
     }
 
@@ -198,25 +231,27 @@ export async function handleUpdatePost(request, env, ctx, params, user, logger) 
     const updatedPost = await getPostById(env, postId);
 
     if (logger) {
-      logger.info('Post updated', { postId });
+      logger.info("Post updated", { postId });
     }
 
     return successResponse(updatedPost, 200);
-
   } catch (err) {
     if (err instanceof ValidationError || err instanceof NotFoundError) {
       if (logger) {
-        logger.warn('Post update failed', { postId: params.postId, error: err.message });
+        logger.warn("Post update failed", {
+          postId: params.postId,
+          error: err.message,
+        });
       }
       return errorResponse(err.message, err.status);
     }
 
     if (logger) {
-      logger.error('Update post error', err);
+      logger.error("Update post error", err);
     } else {
-      console.error('Update post error:', err);
+      console.error("Update post error:", err);
     }
-    return errorResponse('Internal server error', 500);
+    return errorResponse("Internal server error", 500);
   }
 }
 
@@ -230,48 +265,62 @@ export async function handleUpdatePost(request, env, ctx, params, user, logger) 
  * @param {Logger} logger - Logger instance
  * @returns {Promise<Response>} Deletion confirmation response
  */
-export async function handleDeletePost(request, env, ctx, params, user, logger) {
+export async function handleDeletePost(
+  request,
+  env,
+  ctx,
+  params,
+  user,
+  logger,
+) {
   try {
     const postId = parseInt(params.postId);
     if (isNaN(postId)) {
-      throw new ValidationError('Invalid post ID');
+      throw new ValidationError("Invalid post ID");
     }
 
     // Check post exists
     const existingPost = await env.DB.prepare(
-      'SELECT id FROM posts WHERE id = ?'
-    ).bind(postId).first();
+      "SELECT id FROM posts WHERE id = ?",
+    )
+      .bind(postId)
+      .first();
 
     if (!existingPost) {
-      throw new NotFoundError('Post not found');
+      throw new NotFoundError("Post not found");
     }
 
     // Delete post (cascading deletes will handle post_tags and comments via triggers)
-    await env.DB.prepare('DELETE FROM posts WHERE id = ?').bind(postId).run();
+    await env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(postId).run();
 
     if (logger) {
-      logger.info('Post deleted', { postId });
+      logger.info("Post deleted", { postId });
     }
 
-    return successResponse({
-      deleted: true,
-      id: postId
-    }, 200);
-
+    return successResponse(
+      {
+        deleted: true,
+        id: postId,
+      },
+      200,
+    );
   } catch (err) {
     if (err instanceof ValidationError || err instanceof NotFoundError) {
       if (logger) {
-        logger.warn('Post deletion failed', { postId: params.postId, error: err.message });
+        logger.warn("Post deletion failed", {
+          postId: params.postId,
+          error: err.message,
+        });
       }
       return errorResponse(err.message, err.status);
     }
 
     if (logger) {
-      logger.error('Delete post error', err);
+      logger.error("Delete post error", err);
     } else {
-      console.error('Delete post error:', err);
+      console.error("Delete post error:", err);
     }
-    return errorResponse('Internal server error', 500);
+    return errorResponse("Internal server error", 500);
   }
 }
 
@@ -282,9 +331,9 @@ export async function handleDeletePost(request, env, ctx, params, user, logger) 
  * @returns {Promise<Object>} Post with tags
  */
 async function getPostById(env, postId) {
-  const post = await env.DB.prepare(
-    'SELECT * FROM posts WHERE id = ?'
-  ).bind(postId).first();
+  const post = await env.DB.prepare("SELECT * FROM posts WHERE id = ?")
+    .bind(postId)
+    .first();
 
   if (!post) {
     return null;
@@ -295,8 +344,10 @@ async function getPostById(env, postId) {
     `SELECT t.name
      FROM tags t
      JOIN post_tags pt ON pt.tag_id = t.id
-     WHERE pt.post_id = ?`
-  ).bind(postId).all();
+     WHERE pt.post_id = ?`,
+  )
+    .bind(postId)
+    .all();
 
   return {
     id: post.id,
@@ -304,10 +355,10 @@ async function getPostById(env, postId) {
     title: post.title,
     content: post.content,
     summary: post.summary,
-    tags: tagResults.results.map(t => t.name),
+    tags: tagResults.results.map((t) => t.name),
     state: post.state,
     createdAt: post.created_at,
     updatedAt: post.updated_at,
-    views: post.views
+    views: post.views,
   };
 }
