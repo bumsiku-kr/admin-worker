@@ -3,11 +3,9 @@
  * Login and session validation endpoints
  */
 
-import { generateJWT, createPayload } from "../auth/validators.js";
-import { validateCredentials } from "../auth/middleware.js";
 import { successResponse, errorResponse } from "../utils/response.js";
-import { validateLoginRequest } from "../utils/validation.js";
 import { ValidationError, UnauthorizedError } from "../utils/errors.js";
+import { AuthService } from "../services/index.js";
 
 /**
  * POST /login
@@ -21,40 +19,10 @@ import { ValidationError, UnauthorizedError } from "../utils/errors.js";
 export async function handleLogin(request, env, ctx, params, user, logger) {
   try {
     const body = await request.json();
-    const validation = validateLoginRequest(body);
+    const authService = new AuthService(env.DB);
+    const result = await authService.login(body, env, logger);
 
-    if (!validation.valid) {
-      if (logger) {
-        logger.warn("Login validation failed", { error: validation.error });
-      }
-      throw new ValidationError(validation.error);
-    }
-
-    const authResult = await validateCredentials(request, env);
-
-    if (!authResult.valid) {
-      if (logger) {
-        logger.warn("Invalid credentials attempted");
-      }
-      throw new UnauthorizedError("Invalid credentials");
-    }
-
-    const expirySeconds = parseInt(env.JWT_EXPIRY || "7200");
-
-    const payload = createPayload(authResult.userId, expirySeconds);
-    const token = await generateJWT(payload, env.JWT_SECRET);
-
-    if (logger) {
-      logger.info("Login successful", { userId: authResult.userId });
-    }
-
-    return successResponse(
-      {
-        token,
-        expiresIn: expirySeconds,
-      },
-      200,
-    );
+    return successResponse(result, 200);
   } catch (err) {
     if (err instanceof ValidationError || err instanceof UnauthorizedError) {
       return errorResponse(err.message, err.status);
@@ -90,27 +58,10 @@ export async function handleSessionValidation(
   logger,
 ) {
   try {
-    if (!user) {
-      if (logger) {
-        logger.warn("Session validation failed - no user");
-      }
-      throw new UnauthorizedError("Invalid or missing token");
-    }
+    const authService = new AuthService(env.DB);
+    const result = await authService.validateSession(user, logger);
 
-    const expiresAt = new Date(user.exp * 1000).toISOString();
-
-    if (logger) {
-      logger.debug("Session validated", { userId: user.userId, expiresAt });
-    }
-
-    return successResponse(
-      {
-        valid: true,
-        userId: user.userId,
-        expiresAt,
-      },
-      200,
-    );
+    return successResponse(result, 200);
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return errorResponse(err.message, err.status);

@@ -5,6 +5,7 @@
 
 import { successResponse, errorResponse } from "../utils/response.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
+import { CommentService } from "../services/index.js";
 
 /**
  * DELETE /admin/comments/{commentId}
@@ -26,36 +27,10 @@ export async function handleDeleteComment(
 ) {
   try {
     const commentId = params.commentId;
+    const commentService = new CommentService(env.DB);
+    const result = await commentService.deleteComment(commentId, logger);
 
-    if (!commentId || commentId.length < 36) {
-      throw new ValidationError("Invalid comment ID format");
-    }
-
-    const existingComment = await env.DB.prepare(
-      "SELECT id FROM comments WHERE id = ?",
-    )
-      .bind(commentId)
-      .first();
-
-    if (!existingComment) {
-      throw new NotFoundError("Comment not found");
-    }
-
-    await env.DB.prepare("DELETE FROM comments WHERE id = ?")
-      .bind(commentId)
-      .run();
-
-    if (logger) {
-      logger.info("Comment deleted", { commentId });
-    }
-
-    return successResponse(
-      {
-        deleted: true,
-        id: commentId,
-      },
-      200,
-    );
+    return successResponse(result, 200);
   } catch (err) {
     if (err instanceof ValidationError || err instanceof NotFoundError) {
       if (logger) {

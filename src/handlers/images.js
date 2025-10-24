@@ -5,16 +5,7 @@
 
 import { successResponse, errorResponse } from "../utils/response.js";
 import { ValidationError } from "../utils/errors.js";
-
-/**
- * Supported image MIME types
- */
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-
-/**
- * Maximum file size (5MB in bytes)
- */
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+import { ImageService } from "../services/index.js";
 
 /**
  * POST /admin/images
@@ -37,54 +28,11 @@ export async function handleImageUpload(
     const formData = await request.formData();
     const file = formData.get("file");
 
-    if (!file) {
-      throw new ValidationError("No file provided");
-    }
-
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      throw new ValidationError(
-        `Invalid file type. Allowed: ${ALLOWED_TYPES.join(", ")}`,
-      );
-    }
-
-    if (file.size > MAX_FILE_SIZE) {
-      throw new ValidationError(
-        `File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`,
-      );
-    }
-
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const uuid = crypto.randomUUID();
-    const extension = getFileExtension(file.type);
-    const key = `images/${year}/${month}/${uuid}.${extension}`;
-
-    await env.STORAGE.put(key, file.stream(), {
-      httpMetadata: {
-        contentType: file.type,
-      },
-    });
-
     const cdnDomain = env.CDN_DOMAIN || "cdn.bumsiku.kr";
-    const url = `https://${cdnDomain}/${key}`;
+    const imageService = new ImageService(env.STORAGE, cdnDomain);
+    const result = await imageService.uploadImage(file, logger);
 
-    if (logger) {
-      logger.info("Image uploaded", {
-        key,
-        size: file.size,
-        type: file.type,
-        url,
-      });
-    }
-
-    return successResponse(
-      {
-        url,
-        key,
-      },
-      200,
-    );
+    return successResponse(result, 200);
   } catch (err) {
     if (err instanceof ValidationError) {
       if (logger) {
@@ -100,19 +48,4 @@ export async function handleImageUpload(
     }
     return errorResponse("Internal server error", 500);
   }
-}
-
-/**
- * Get file extension from MIME type
- * @param {string} mimeType - MIME type
- * @returns {string} File extension
- */
-function getFileExtension(mimeType) {
-  const extensions = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/gif": "gif",
-    "image/webp": "webp",
-  };
-  return extensions[mimeType] || "jpg";
 }
