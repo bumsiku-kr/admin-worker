@@ -7,6 +7,7 @@ compatibility_date = "2025-10-22"
 ENVIRONMENT = "production"
 ALLOWED_ORIGINS = "*"
 JWT_EXPIRY = "7200"  # 2 hours in seconds
+CDN_DOMAIN = "pub-5e4858d1f4a945f983eb087580355811.r2.dev"
 
 # D1 Database Bindings
 [[d1_databases]]
