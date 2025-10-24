@@ -34,7 +34,6 @@ export async function handleImageUpload(
   logger,
 ) {
   try {
-    // Parse multipart form data
     const formData = await request.formData();
     const file = formData.get("file");
 
@@ -42,21 +41,18 @@ export async function handleImageUpload(
       throw new ValidationError("No file provided");
     }
 
-    // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
       throw new ValidationError(
         `Invalid file type. Allowed: ${ALLOWED_TYPES.join(", ")}`,
       );
     }
 
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       throw new ValidationError(
         `File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB`,
       );
     }
 
-    // Generate unique file key with date-based organization
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
@@ -64,15 +60,12 @@ export async function handleImageUpload(
     const extension = getFileExtension(file.type);
     const key = `images/${year}/${month}/${uuid}.${extension}`;
 
-    // Upload to R2
     await env.STORAGE.put(key, file.stream(), {
       httpMetadata: {
         contentType: file.type,
       },
     });
 
-    // Generate CDN URL
-    // TODO: Replace with actual CDN domain when configured
     const cdnDomain = env.CDN_DOMAIN || "cdn.bumsiku.kr";
     const url = `https://${cdnDomain}/${key}`;
 

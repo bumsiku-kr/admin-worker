@@ -18,24 +18,19 @@ export async function authenticate(request, env) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
-  // Exempt login and session endpoints from authentication
   const publicEndpoints = ["/login", "/session"];
   const isPublicEndpoint = publicEndpoints.some(
     (endpoint) => pathname === endpoint,
   );
 
-  // Session endpoint requires auth to validate token
   if (pathname === "/session") {
-    // Session validation DOES require token
     return await verifyToken(request, env);
   }
 
-  // Login endpoint doesn't require auth
   if (isPublicEndpoint) {
     return { authorized: true, user: null };
   }
 
-  // All other endpoints require authentication
   return await verifyToken(request, env);
 }
 
@@ -48,7 +43,6 @@ export async function authenticate(request, env) {
 async function verifyToken(request, env) {
   const authHeader = request.headers.get("Authorization");
 
-  // Check for Authorization header
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return errorResponse(
       "Unauthorized - Missing or invalid authorization header",
@@ -56,15 +50,12 @@ async function verifyToken(request, env) {
     );
   }
 
-  // Extract token
-  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const token = authHeader.substring(7);
 
-  // Validate JWT
   try {
     const payload = await validateJWT(token, env.JWT_SECRET);
     return { authorized: true, user: payload };
   } catch (err) {
-    // Token validation failed (invalid signature, expired, malformed)
     return errorResponse(`Unauthorized - ${err.message}`, 401);
   }
 }
@@ -80,15 +71,12 @@ export async function validateCredentials(request, env) {
     const body = await request.json();
     const { username, password } = body;
 
-    // Basic validation
     if (!username || !password) {
       return { valid: false };
     }
 
-    // Compare with environment secrets
-    // In production, use bcrypt for password hashing
     if (username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
-      return { valid: true, userId: 1 }; // Admin user ID
+      return { valid: true, userId: 1 };
     }
 
     return { valid: false };
@@ -121,7 +109,6 @@ export function basicAuth(request, env) {
   const credentials = atob(authHeader.substring(6));
   const [username, password] = credentials.split(":");
 
-  // Constant-time comparison to prevent timing attacks
   if (username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
     return { authorized: true, user: { username } };
   }

@@ -20,11 +20,8 @@ import { handleDeleteComment } from "./handlers/comments.js";
  * Path parameters: :paramName
  */
 const routes = [
-  // Authentication endpoints (login doesn't require auth, session does)
   { pattern: "POST /login", handler: handleLogin },
   { pattern: "GET /session", handler: handleSessionValidation },
-
-  // Admin endpoints (auth required via middleware)
   { pattern: "POST /admin/posts", handler: handleCreatePost },
   { pattern: "PUT /admin/posts/:postId", handler: handleUpdatePost },
   { pattern: "DELETE /admin/posts/:postId", handler: handleDeletePost },
@@ -45,7 +42,6 @@ function matchPattern(pattern, path) {
   const patternParts = pattern.split("/").filter(Boolean);
   const pathParts = path.split("/").filter(Boolean);
 
-  // Must have same number of parts
   if (patternParts.length !== pathParts.length) {
     return null;
   }
@@ -56,13 +52,10 @@ function matchPattern(pattern, path) {
     const patternPart = patternParts[i];
     const pathPart = pathParts[i];
 
-    // Parameter (starts with :)
     if (patternPart.startsWith(":")) {
       const paramName = patternPart.substring(1);
       params[paramName] = decodeURIComponent(pathPart);
-    }
-    // Literal match
-    else if (patternPart !== pathPart) {
+    } else if (patternPart !== pathPart) {
       return null;
     }
   }
@@ -80,12 +73,10 @@ function findRoute(method, pathname) {
   for (const route of routes) {
     const [routeMethod, routePattern] = route.pattern.split(" ", 2);
 
-    // Method must match
     if (routeMethod !== method) {
       continue;
     }
 
-    // Try to match pattern
     const match = matchPattern(routePattern, pathname);
     if (match) {
       return {
@@ -97,35 +88,6 @@ function findRoute(method, pathname) {
 
   return null;
 }
-
-/**
- * Parse request body as JSON
- * @param {Request} request - Request object
- * @returns {Promise<Object>} Parsed JSON body
- */
-// Utility function - available for future use
-// async function parseJsonBody(request) {
-//   try {
-//     const text = await request.text();
-//     return text ? JSON.parse(text) : {};
-//   } catch (error) {
-//     throw new Error("Invalid JSON in request body");
-//   }
-// }
-
-/**
- * Extract query parameters from URL
- * @param {URL} url - URL object
- * @returns {Object} Query parameters as object
- */
-// Utility function - available for future use
-// function getQueryParams(url) {
-//   const params = {};
-//   for (const [key, value] of url.searchParams.entries()) {
-//     params[key] = value;
-//   }
-//   return params;
-// }
 
 /**
  * Main router function
@@ -142,7 +104,6 @@ export async function router(request, env, ctx, user = null, logger = null) {
     const { pathname } = url;
     const method = request.method;
 
-    // Find matching route
     const match = findRoute(method, pathname);
 
     if (!match) {
@@ -152,7 +113,6 @@ export async function router(request, env, ctx, user = null, logger = null) {
       return errorResponse("Not Found", 404);
     }
 
-    // Create child logger with route context
     const routeLogger = logger
       ? logger.child({ handler: match.handler.name })
       : null;
@@ -161,8 +121,6 @@ export async function router(request, env, ctx, user = null, logger = null) {
       routeLogger.debug("Route matched", { params: match.params });
     }
 
-    // Call handler with separate arguments
-    // Signature: handler(request, env, ctx, params, user, logger)
     const handlerStartTime = Date.now();
     const response = await match.handler(
       request,
@@ -189,7 +147,6 @@ export async function router(request, env, ctx, user = null, logger = null) {
       console.error("Router error:", error);
     }
 
-    // Convert to API error
     const apiError = toAPIError(error);
     return errorResponse(apiError.message, apiError.status);
   }

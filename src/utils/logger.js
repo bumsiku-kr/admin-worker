@@ -84,7 +84,6 @@ export class Logger {
    * @param {Object} meta - Additional metadata
    */
   debug(message, meta = {}) {
-    // Only log debug in development
     if (this.context.environment !== "production") {
       const logEntry = this.createLogEntry(LogLevel.DEBUG, message, meta);
       console.log(JSON.stringify(logEntry));

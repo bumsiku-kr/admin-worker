@@ -20,7 +20,6 @@ import { ValidationError, UnauthorizedError } from "../utils/errors.js";
  */
 export async function handleLogin(request, env, ctx, params, user, logger) {
   try {
-    // Parse and validate request body
     const body = await request.json();
     const validation = validateLoginRequest(body);
 
@@ -31,7 +30,6 @@ export async function handleLogin(request, env, ctx, params, user, logger) {
       throw new ValidationError(validation.error);
     }
 
-    // Validate credentials
     const authResult = await validateCredentials(request, env);
 
     if (!authResult.valid) {
@@ -41,10 +39,8 @@ export async function handleLogin(request, env, ctx, params, user, logger) {
       throw new UnauthorizedError("Invalid credentials");
     }
 
-    // Get JWT expiry from environment (default: 7200 seconds = 2 hours)
     const expirySeconds = parseInt(env.JWT_EXPIRY || "7200");
 
-    // Generate JWT token
     const payload = createPayload(authResult.userId, expirySeconds);
     const token = await generateJWT(payload, env.JWT_SECRET);
 
@@ -52,7 +48,6 @@ export async function handleLogin(request, env, ctx, params, user, logger) {
       logger.info("Login successful", { userId: authResult.userId });
     }
 
-    // Return success response
     return successResponse(
       {
         token,
@@ -95,7 +90,6 @@ export async function handleSessionValidation(
   logger,
 ) {
   try {
-    // If we reach here, authentication middleware has already validated the token
     if (!user) {
       if (logger) {
         logger.warn("Session validation failed - no user");
@@ -103,7 +97,6 @@ export async function handleSessionValidation(
       throw new UnauthorizedError("Invalid or missing token");
     }
 
-    // Calculate expiration time from token payload
     const expiresAt = new Date(user.exp * 1000).toISOString();
 
     if (logger) {

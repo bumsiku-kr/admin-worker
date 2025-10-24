@@ -47,12 +47,9 @@ export async function handleCreatePost(
     const { title, content, summary, tags = [], state } = body;
     let { slug } = body;
 
-    // Auto-generate slug if not provided
     if (!slug) {
       slug = generateSlug(title);
     }
-
-    // Check slug uniqueness
     const existingPost = await env.DB.prepare(
       "SELECT id FROM posts WHERE slug = ?",
     )
@@ -63,7 +60,6 @@ export async function handleCreatePost(
       throw new ValidationError("Slug already exists");
     }
 
-    // Insert post
     const now = new Date().toISOString();
     const insertResult = await env.DB.prepare(
       `INSERT INTO posts (slug, title, content, summary, state, created_at, updated_at, views)
@@ -74,10 +70,8 @@ export async function handleCreatePost(
 
     const postId = insertResult.meta.last_row_id;
 
-    // Insert tags
     if (tags.length > 0) {
       for (const tagName of tags) {
-        // Get or create tag
         let tag = await env.DB.prepare("SELECT id FROM tags WHERE name = ?")
           .bind(tagName)
           .first();
@@ -94,7 +88,6 @@ export async function handleCreatePost(
           tagId = tag.id;
         }
 
-        // Create post-tag relationship
         await env.DB.prepare(
           "INSERT INTO post_tags (post_id, tag_id) VALUES (?, ?)",
         )
@@ -103,7 +96,6 @@ export async function handleCreatePost(
       }
     }
 
-    // Fetch created post with tags
     const createdPost = await getPostById(env, postId);
 
     if (logger) {
@@ -159,7 +151,6 @@ export async function handleUpdatePost(
       throw new ValidationError(validation.error);
     }
 
-    // Check post exists
     const existingPost = await env.DB.prepare(
       "SELECT id FROM posts WHERE id = ?",
     )
@@ -172,7 +163,6 @@ export async function handleUpdatePost(
 
     const { title, content, summary, tags = [], state, slug } = body;
 
-    // Check slug uniqueness (if changed)
     if (slug) {
       const slugConflict = await env.DB.prepare(
         "SELECT id FROM posts WHERE slug = ? AND id != ?",
@@ -185,7 +175,6 @@ export async function handleUpdatePost(
       }
     }
 
-    // Update post
     const now = new Date().toISOString();
     await env.DB.prepare(
       `UPDATE posts
@@ -195,7 +184,6 @@ export async function handleUpdatePost(
       .bind(title, content, summary, state, slug, now, postId)
       .run();
 
-    // Update tags - delete existing and insert new
     await env.DB.prepare("DELETE FROM post_tags WHERE post_id = ?")
       .bind(postId)
       .run();
@@ -227,7 +215,6 @@ export async function handleUpdatePost(
       }
     }
 
-    // Fetch updated post
     const updatedPost = await getPostById(env, postId);
 
     if (logger) {
@@ -279,7 +266,6 @@ export async function handleDeletePost(
       throw new ValidationError("Invalid post ID");
     }
 
-    // Check post exists
     const existingPost = await env.DB.prepare(
       "SELECT id FROM posts WHERE id = ?",
     )
@@ -290,7 +276,6 @@ export async function handleDeletePost(
       throw new NotFoundError("Post not found");
     }
 
-    // Delete post (cascading deletes will handle post_tags and comments via triggers)
     await env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(postId).run();
 
     if (logger) {
@@ -339,7 +324,6 @@ async function getPostById(env, postId) {
     return null;
   }
 
-  // Fetch tags
   const tagResults = await env.DB.prepare(
     `SELECT t.name
      FROM tags t

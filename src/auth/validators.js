@@ -10,17 +10,14 @@
  * @returns {Promise<string>} JWT token
  */
 export async function generateJWT(payload, secret) {
-  // Encode header and payload
   const header = { alg: "HS256", typ: "JWT" };
   const headerB64 = base64UrlEncode(JSON.stringify(header));
   const payloadB64 = base64UrlEncode(JSON.stringify(payload));
 
-  // Create signature
   const data = `${headerB64}.${payloadB64}`;
   const signature = await signData(data, secret);
   const signatureB64 = base64UrlEncode(signature);
 
-  // Return complete JWT
   return `${headerB64}.${payloadB64}.${signatureB64}`;
 }
 
@@ -32,7 +29,6 @@ export async function generateJWT(payload, secret) {
  * @throws {Error} If token is invalid or expired
  */
 export async function validateJWT(token, secret) {
-  // Split token into parts
   const parts = token.split(".");
   if (parts.length !== 3) {
     throw new Error("Invalid token format");
@@ -40,7 +36,6 @@ export async function validateJWT(token, secret) {
 
   const [headerB64, payloadB64, signatureB64] = parts;
 
-  // Verify signature
   const data = `${headerB64}.${payloadB64}`;
   const signature = base64UrlDecode(signatureB64);
   const valid = await verifySignature(data, signature, secret);
@@ -49,10 +44,8 @@ export async function validateJWT(token, secret) {
     throw new Error("Invalid signature");
   }
 
-  // Decode and validate payload
   const payload = JSON.parse(base64UrlDecodeString(payloadB64));
 
-  // Check expiration
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error("Token expired");
   }
@@ -115,7 +108,6 @@ function base64UrlEncode(input) {
   if (typeof input === "string") {
     str = btoa(input);
   } else {
-    // ArrayBuffer
     const bytes = new Uint8Array(input);
     let binary = "";
     for (let i = 0; i < bytes.length; i++) {

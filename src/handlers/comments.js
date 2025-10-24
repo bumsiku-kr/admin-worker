@@ -27,12 +27,10 @@ export async function handleDeleteComment(
   try {
     const commentId = params.commentId;
 
-    // Validate UUID format (basic check)
     if (!commentId || commentId.length < 36) {
       throw new ValidationError("Invalid comment ID format");
     }
 
-    // Check comment exists
     const existingComment = await env.DB.prepare(
       "SELECT id FROM comments WHERE id = ?",
     )
@@ -43,7 +41,6 @@ export async function handleDeleteComment(
       throw new NotFoundError("Comment not found");
     }
 
-    // Delete comment
     await env.DB.prepare("DELETE FROM comments WHERE id = ?")
       .bind(commentId)
       .run();
