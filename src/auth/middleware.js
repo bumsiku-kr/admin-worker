@@ -5,7 +5,6 @@
 
 import { validateJWT } from "./validators.js";
 import { errorResponse } from "../utils/response.js";
-import { UnauthorizedError } from "../utils/errors.js";
 
 /**
  * Authenticate request using JWT Bearer token
@@ -93,7 +92,7 @@ export async function validateCredentials(request, env) {
     }
 
     return { valid: false };
-  } catch (err) {
+  } catch {
     return { valid: false };
   }
 }

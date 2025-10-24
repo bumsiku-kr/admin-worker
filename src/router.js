@@ -103,27 +103,29 @@ function findRoute(method, pathname) {
  * @param {Request} request - Request object
  * @returns {Promise<Object>} Parsed JSON body
  */
-async function parseJsonBody(request) {
-  try {
-    const text = await request.text();
-    return text ? JSON.parse(text) : {};
-  } catch (error) {
-    throw new Error("Invalid JSON in request body");
-  }
-}
+// Utility function - available for future use
+// async function parseJsonBody(request) {
+//   try {
+//     const text = await request.text();
+//     return text ? JSON.parse(text) : {};
+//   } catch (error) {
+//     throw new Error("Invalid JSON in request body");
+//   }
+// }
 
 /**
  * Extract query parameters from URL
  * @param {URL} url - URL object
  * @returns {Object} Query parameters as object
  */
-function getQueryParams(url) {
-  const params = {};
-  for (const [key, value] of url.searchParams.entries()) {
-    params[key] = value;
-  }
-  return params;
-}
+// Utility function - available for future use
+// function getQueryParams(url) {
+//   const params = {};
+//   for (const [key, value] of url.searchParams.entries()) {
+//     params[key] = value;
+//   }
+//   return params;
+// }
 
 /**
  * Main router function
