@@ -1,16 +1,19 @@
 /**
  * Auth Service
  * Business logic for authentication
+ *
+ * NOTE: DB 없이 단일 Admin 계정 운용
+ * ADMIN_USERNAME, ADMIN_PASSWORD 환경 변수 사용
  */
 
-import { AuthRepository } from "../repositories/index.js";
 import { generateJWT, createPayload } from "../auth/validators.js";
 import { validateLoginRequest } from "../utils/validation.js";
 import { ValidationError, UnauthorizedError } from "../utils/errors.js";
 
 export class AuthService {
   constructor(db) {
-    this.repository = new AuthRepository(db);
+    // DB는 사용하지 않지만 호환성을 위해 유지
+    this.db = db;
   }
 
   async login(credentials, env, logger) {
@@ -25,9 +28,8 @@ export class AuthService {
 
     const { username, password } = credentials;
 
-    const user = await this.repository.findUserByUsername(username);
-
-    if (!user) {
+    // DB 대신 환경 변수에서 직접 검증
+    if (username !== env.ADMIN_USERNAME) {
       if (logger) {
         logger.warn("Invalid credentials attempted", { username });
       }
@@ -35,19 +37,21 @@ export class AuthService {
     }
 
     const hashedPassword = await this.hashPassword(password, env.PASSWORD_SALT);
-    if (hashedPassword !== user.password) {
+    if (hashedPassword !== env.ADMIN_PASSWORD) {
       if (logger) {
         logger.warn("Invalid credentials attempted", { username });
       }
       throw new UnauthorizedError("Invalid credentials");
     }
 
+    // 단일 Admin 계정이므로 userId는 고정값 1 사용
+    const userId = 1;
     const expirySeconds = parseInt(env.JWT_EXPIRY || "7200");
-    const payload = createPayload(user.id, expirySeconds);
+    const payload = createPayload(userId, expirySeconds);
     const token = await generateJWT(payload, env.JWT_SECRET);
 
     if (logger) {
-      logger.info("Login successful", { userId: user.id });
+      logger.info("Login successful", { userId, username });
     }
 
     return {

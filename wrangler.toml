@@ -20,9 +20,12 @@ binding = "STORAGE"
 bucket_name = "blog-images"
 
 # Secrets (설정 필요 - wrangler secret put)
-# - JWT_SECRET: JWT 토큰 서명 키 (최소 32자)
-# - ADMIN_USERNAME: 관리자 아이디
-# - ADMIN_PASSWORD: 관리자 비밀번호 (bcrypt 해시 권장)
+# - JWT_SECRET: JWT 토큰 서명 키 (최소 32바이트, base64 인코딩)
+# - PASSWORD_SALT: 비밀번호 해싱용 Salt (16바이트 hex)
+# - ADMIN_USERNAME: 관리자 아이디 (평문)
+# - ADMIN_PASSWORD: 관리자 비밀번호 SHA-256 해시 (password + PASSWORD_SALT)
+#
+# 설정 방법은 ADMIN_SETUP_GUIDE.md 참조
 
 # Observability Configuration
 # Enables Cloudflare's built-in observability for production monitoring
