@@ -5,7 +5,7 @@
 
 import { PostRepository } from "../repositories/index.js";
 import { ValidationError, NotFoundError } from "../utils/errors.js";
-import { validatePostCreate } from "../utils/validation.js";
+import { validatePostRequest } from "../utils/validation.js";
 
 export class PostService {
   constructor(db) {
@@ -20,11 +20,7 @@ export class PostService {
   }
 
   async createPost(postData, logger) {
-    const validation = validatePostCreate(postData);
-
-    if (!validation.valid) {
-      throw new ValidationError(validation.error);
-    }
+    validatePostRequest(postData);
 
     const { title, content, summary, tags = [], state } = postData;
     let { slug } = postData;
@@ -63,11 +59,7 @@ export class PostService {
   }
 
   async updatePost(postId, postData, logger) {
-    const validation = validatePostCreate(postData);
-
-    if (!validation.valid) {
-      throw new ValidationError(validation.error);
-    }
+    validatePostRequest(postData);
 
     const existingPost = await this.repository.findById(postId);
     if (!existingPost) {
